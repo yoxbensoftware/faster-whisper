@@ -3,7 +3,14 @@ param([string]$ScriptDir)
 $desktop     = [Environment]::GetFolderPath('Desktop')
 $shortcut    = Join-Path $desktop 'oXben - SpeechXText.lnk'
 $voiceTyper  = Join-Path $ScriptDir 'voice_typer.py'
-$iconPath    = Join-Path $ScriptDir 'icon.ico'
+$srcIcon     = Join-Path $ScriptDir 'icon.ico'
+
+# Copy icon to a path with NO special/unicode characters so Windows loads it reliably
+$iconDir  = Join-Path $env:APPDATA 'oXben'
+$iconPath = Join-Path $iconDir 'icon.ico'
+if (-not (Test-Path $iconDir)) { New-Item -ItemType Directory -Path $iconDir | Out-Null }
+Copy-Item -Path $srcIcon -Destination $iconPath -Force
+Write-Host "[OK] Ikon kopyalandi: $iconPath"
 
 # Find pythonw.exe next to python.exe
 $pythonExe   = (Get-Command python.exe -ErrorAction Stop).Source
@@ -15,7 +22,7 @@ $sc = $ws.CreateShortcut($shortcut)
 $sc.TargetPath      = $pythonwExe
 $sc.Arguments       = "`"$voiceTyper`""
 $sc.WorkingDirectory = $ScriptDir
-$sc.IconLocation    = $iconPath
+$sc.IconLocation    = "$iconPath,0"
 $sc.Description     = 'oXben - SpeechXText — Real-Time Turkish Dictation'
 $sc.Save()
 
