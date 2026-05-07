@@ -48,7 +48,11 @@ echo.
 echo [2/3] Bagimliliklar yukleniyor (bu 2-5 dakika surebilir)...
 echo       faster-whisper, sounddevice, numpy, pynput...
 echo.
-python -m pip install -r requirements_app.txt
+if exist "%~dp0requirements_app.txt" (
+    python -m pip install -r "%~dp0requirements_app.txt"
+) else (
+    python -m pip install "faster-whisper>=1.0.0" "sounddevice>=0.4.6" "numpy>=1.24.0" "pynput>=1.7.6"
+)
 if errorlevel 1 (
     echo.
     echo [HATA] Paket yuklemesi basarisiz. Internet baglantinizi kontrol edin.
