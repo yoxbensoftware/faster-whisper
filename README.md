@@ -1,10 +1,70 @@
-[![CI](https://github.com/SYSTRAN/faster-whisper/workflows/CI/badge.svg)](https://github.com/SYSTRAN/faster-whisper/actions?query=workflow%3ACI) [![PyPI version](https://badge.fury.io/py/faster-whisper.svg)](https://badge.fury.io/py/faster-whisper)
+# 🎙 Sesli Yazı — Gerçek Zamanlı Türkçe Ses Yazıcı
 
-# Faster Whisper transcription with CTranslate2
+Konuştuğunuzda, ekranda hangi pencere açıksa (Not Defteri, Word, tarayıcı vb.) metni otomatik olarak yazar. Tamamen yerel çalışır — internet, API veya ücret yok.
 
-**faster-whisper** is a reimplementation of OpenAI's Whisper model using [CTranslate2](https://github.com/OpenNMT/CTranslate2/), which is a fast inference engine for Transformer models.
+## Özellikler
 
-This implementation is up to 4 times faster than [openai/whisper](https://github.com/openai/whisper) for the same accuracy while using less memory. The efficiency can be further improved with 8-bit quantization on both CPU and GPU.
+- 🎙 Mikrofon seçimi (birden fazla cihaz desteklenir)
+- ⌨️ Konuşulan metin aktif pencereye otomatik yapıştırılır
+- 🇹🇷 Türkçe için optimize (faster-whisper large-v3-turbo modeli)
+- 🔒 Tamamen offline — hiçbir veri dışarı gönderilmez
+- ⚡ F9 kısayol tuşu ile başlat/durdur
+- 📋 Kopyala / Temizle butonları
+
+## Hızlı Kurulum (Başka Bir Windows PC)
+
+1. Bu repoyu indirin (ZIP veya `git clone`)
+2. `setup.bat` dosyasına çift tıklayın
+3. Masaüstünde oluşan **Sesli Yazı** kısayoluna tıklayın
+4. İlk açılışta model (~809 MB) otomatik indirilir — sonraki açılışlarda internet gerekmez
+
+### Gereksinimler
+
+- Windows 10/11 (64-bit)
+- Python 3.9+ ([python.org](https://www.python.org/downloads/))
+- 8 GB RAM önerilir (minimum 4 GB)
+- ~1 GB disk alanı (model için)
+
+## Manuel Kurulum
+
+```bash
+pip install -r requirements_app.txt
+python voice_typer.py
+```
+
+## Kullanım
+
+1. Uygulamayı açın — model yüklenir (ilk kez ~2 dk, sonraki açılışlarda ~10 sn)
+2. Metin yazmak istediğiniz pencereye tıklayın
+3. **Başlat** butonuna veya **F9** tuşuna basın
+4. Türkçe konuşun → metin o pencereye otomatik yazılır
+5. Durmak için tekrar **Başlat/Durdur** veya **F9**
+
+## Kullanılan Teknolojiler
+
+| Bileşen | Açıklama |
+|---------|----------|
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Ses tanıma motoru (CTranslate2 tabanlı) |
+| [large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | Dil modeli |
+| sounddevice | Mikrofon erişimi |
+| pynput | Klavye simülasyonu |
+| tkinter | Arayüz |
+
+## Notlar
+
+- GPU gerekmez, CPU ile çalışır
+- Model `~/.cache/sesli_yazi/` klasörüne indirilir
+- Ses işleme tamamen yerel yapılır
+
+## Lisans
+
+MIT
+
+---
+
+## Faster Whisper transcription with CTranslate2
+
+**faster-whisper** is a reimplementation of OpenAI's Whisper model using [CTranslate2](https://github.com/OpenNMT/CTranslate2/).
 
 ## Benchmark
 
