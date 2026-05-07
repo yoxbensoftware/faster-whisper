@@ -8,11 +8,34 @@ echo.
 :: Python kontrol
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [HATA] Python bulunamadi!
-    echo Lutfen https://www.python.org/downloads/ adresinden Python 3.9+ indirin.
-    echo Kurulum sirasinda "Add Python to PATH" secenegini isaretleyin.
-    pause
-    exit /b 1
+    echo Python bulunamadi. Otomatik yukleniyor...
+    winget --version >nul 2>&1
+    if errorlevel 1 (
+        echo [HATA] winget de bulunamadi.
+        echo Lutfen Microsoft Store'dan "App Installer" uygulamasini yukleyin
+        echo veya https://www.python.org/downloads/ adresinden Python 3.11+ indirin.
+        echo Kurulum sirasinda "Add Python to PATH" secenegini isaretleyin.
+        pause
+        exit /b 1
+    )
+    echo winget ile Python 3.11 yukleniyor, lutfen bekleyin...
+    winget install -e --id Python.Python.3.11 --silent --accept-package-agreements --accept-source-agreements
+    if errorlevel 1 (
+        echo [HATA] Python otomatik yuklenemedi.
+        echo Lutfen https://www.python.org/downloads/ adresinden Python 3.11+ indirin.
+        echo Kurulum sirasinda "Add Python to PATH" secenegini isaretleyin.
+        pause
+        exit /b 1
+    )
+    :: PATH'i yenile
+    call refreshenv >nul 2>&1
+    python --version >nul 2>&1
+    if errorlevel 1 (
+        echo Python yuklendi. Lutfen bu pencereyi kapatin ve setup.bat'i tekrar calistirin.
+        pause
+        exit /b 0
+    )
+    echo Python basariyla yuklendi!
 )
 
 echo [1/3] Bagimliliklar yukleniyor...

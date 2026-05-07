@@ -257,6 +257,7 @@ class SesliYazi:
 
         self.root.update()
         self._apply_noactivate()
+        self._apply_rounded_corners()
 
         self.tr = AudioTranscriber(
             on_text   = self._got_text,
@@ -267,6 +268,23 @@ class SesliYazi:
 
         self.hk = GlobalHotKeys({"<f9>": self._toggle})
         self.hk.start()
+
+    def _apply_rounded_corners(self):
+        """Windows 11: rounded window corners via DWM API."""
+        try:
+            DWMWA_WINDOW_CORNER_PREFERENCE = 33
+            DWMWCP_ROUND = 2
+            raw = ctypes.windll.user32.GetAncestor(self.root.winfo_id(), 2)
+            if raw:
+                hwnd = ctypes.c_void_p(int(raw))
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                    hwnd,
+                    DWMWA_WINDOW_CORNER_PREFERENCE,
+                    ctypes.byref(ctypes.c_int(DWMWCP_ROUND)),
+                    ctypes.sizeof(ctypes.c_int),
+                )
+        except Exception:
+            pass
 
     def _apply_noactivate(self):
         GWL_EXSTYLE      = -20
