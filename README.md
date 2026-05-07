@@ -1,8 +1,9 @@
-# ⬡ Sesli Yazı — Real-Time Turkish Speech-to-Text
+# ⬡ oXben — SpeechXText
+### Real-Time Turkish Speech-to-Text
 
 > **Speak. It types.** Anywhere on your screen.
 
-Sesli Yazı listens to your microphone and automatically types the transcribed text into whatever window you are using — Notepad, Word, browser, chat app, anything. Runs **100% offline** on your CPU, no API keys, no subscriptions, no data ever leaves your machine.
+oXben SpeechXText listens to your microphone and automatically types the transcribed text into whatever window you are using — Notepad, Word, browser, chat app, anything. Runs **100% offline** on your CPU, no API keys, no subscriptions, no data ever leaves your machine.
 
 ![dark ui](https://img.shields.io/badge/UI-dark%20cyberpunk-8b5cf6?style=flat-square) ![offline](https://img.shields.io/badge/runs-offline-10b981?style=flat-square) ![lang](https://img.shields.io/badge/language-Turkish-ef4444?style=flat-square) ![model](https://img.shields.io/badge/model-large--v3--turbo-22d3ee?style=flat-square)
 
@@ -17,6 +18,7 @@ Sesli Yazı listens to your microphone and automatically types the transcribed t
 | 🇹🇷 | Optimised for Turkish with `large-v3-turbo` model |
 | 🔒 | Fully offline — no internet after first model download |
 | ⚡ | **F9** global hotkey to start / stop anywhere |
+| ⏩ | **F10** instant transcribe — flush mid-speech without stopping |
 | 🌑 | Dark cyberpunk UI with animated volume bars |
 
 ---
@@ -26,7 +28,7 @@ Sesli Yazı listens to your microphone and automatically types the transcribed t
 1. Clone or download this repo as ZIP
 2. Double-click **`setup.bat`**
    - Installs Python dependencies automatically
-   - Creates a **Sesli Yazı** shortcut on your Desktop
+   - Creates an **oXben - SpeechXText** shortcut on your Desktop
 3. Click the shortcut — on first launch the model (~809 MB) downloads automatically
 4. Once ready, click any text field anywhere, press **START** or **F9**, and speak
 
@@ -55,7 +57,8 @@ python voice_typer.py
 2. Click inside its text area
 3. Press START button or F9
 4. Speak Turkish — text appears in real time
-5. Press STOP / F9 to stop
+5. Press **F10** to instantly transcribe mid-speech (keeps recording)
+6. Press STOP / F9 to stop
 ```
 
 ---
@@ -77,7 +80,8 @@ python voice_typer.py
 
 - **No GPU required** — runs on any modern x64 CPU
 - `beam_size=1` for minimum latency (~1 s response after speech ends)
-- Model is cached at `~/.cache/sesli_yazi/` after first download
+- Model is cached at `~/.cache/sesli_yazi/` after first download (~809 MB, one-time)
+- Built by [Oz](https://linkedin.com/in/ozgenc) · [oXben](https://oxben.com.tr)
 - All audio processing is local — zero data sent externally
 
 ---
