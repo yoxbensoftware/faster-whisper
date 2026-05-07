@@ -520,15 +520,33 @@ class SesliYazi:
 
         # ── Footer ────────────────────────────────────────────────────────
         footer = tk.Frame(self.root, bg=self.BG)
-        footer.pack(side=tk.BOTTOM, fill=tk.X, pady=(2, 8))
+        footer.pack(side=tk.BOTTOM, fill=tk.X, pady=(4, 6))
 
-        tk.Label(footer,
-                 text="F9 start/stop  •  F10 instant transcribe  •  STOP mid-speech",
-                 font=("Consolas", 7), fg=self.TEXT_DIM, bg=self.BG,
-                 ).pack(side=tk.TOP)
+        # Hotkey hints — two rows, colour-coded
+        hints = tk.Frame(footer, bg=self.BG)
+        hints.pack(side=tk.TOP)
+
+        def _hint(parent, key, desc, key_color):
+            tk.Label(parent, text=key,  font=("Consolas", 7, "bold"),
+                     fg=key_color,       bg=self.BG).pack(side=tk.LEFT)
+            tk.Label(parent, text=desc, font=("Consolas", 7),
+                     fg=self.TEXT_DIM,   bg=self.BG).pack(side=tk.LEFT)
+
+        row1 = tk.Frame(hints, bg=self.BG)
+        row1.pack()
+        _hint(row1, "F9",  " start / stop",      self.VIOLET)
+        tk.Label(row1, text="    ", bg=self.BG).pack(side=tk.LEFT)
+        _hint(row1, "F10", " instant transcribe", self.CYAN)
+
+        row2 = tk.Frame(hints, bg=self.BG)
+        row2.pack(pady=(1, 0))
+        _hint(row2, "\"stop\"", " removes word & flushes mid-speech", self.GREEN)
+
+        # Divider
+        tk.Frame(footer, bg=self.BORDER, height=1).pack(fill=tk.X, padx=14, pady=(5, 4))
 
         credit = tk.Frame(footer, bg=self.BG)
-        credit.pack(side=tk.TOP, pady=(3, 0))
+        credit.pack(side=tk.TOP)
 
         oz_lbl = tk.Label(credit, text="Oz",
                           font=("Consolas", 8, "bold"), fg=self.VIOLET, bg=self.BG,
