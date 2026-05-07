@@ -230,9 +230,19 @@ class AudioTranscriber:
 
 # ─── GUI ──────────────────────────────────────────────────────────────────────
 class SesliYazi:
-    RED  = "#ef4444"
-    BLUE = "#3b82f6"
-    BG   = "#f8fafc"
+    # ── Dark Cyberpunk Palette ────────────────────────────────────────────────
+    BG        = "#0b0b14"   # deep void black
+    CARD      = "#12121e"   # slightly lighter card
+    BORDER    = "#1e1e35"   # subtle border
+    VIOLET    = "#8b5cf6"   # primary accent
+    VIOLET2   = "#6d28d9"   # darker violet
+    CYAN      = "#22d3ee"   # secondary accent
+    RED       = "#f43f5e"   # stop red
+    RED2      = "#be123c"   # darker red
+    GREEN     = "#10b981"   # success
+    TEXT      = "#e2e8f0"   # main text
+    TEXT_DIM  = "#4b5563"   # muted text
+    BLUE      = "#8b5cf6"   # alias for toggle compat
 
     def __init__(self):
         self.root = tk.Tk()
@@ -241,7 +251,7 @@ class SesliYazi:
         self.root.configure(bg=self.BG)
         self.root.attributes("-topmost", True)
         sw = self.root.winfo_screenwidth()
-        self.root.geometry(f"360x420+{sw - 375}+10")
+        self.root.geometry(f"380x560+{sw - 395}+10")
         self._set_icon()
         self._build_ui()
 
@@ -287,100 +297,236 @@ class SesliYazi:
         return os.path.join(base, name)
 
     def _build_ui(self):
-        pad = {"padx": 12}
+        # ── Title bar ────────────────────────────────────────────────────
+        title_frame = tk.Frame(self.root, bg=self.BG)
+        title_frame.pack(fill=tk.X, pady=(14, 0))
+        tk.Label(title_frame, text="⬡", font=("Segoe UI", 18),
+                 fg=self.VIOLET, bg=self.BG).pack(side=tk.LEFT, padx=(14, 6))
+        tk.Label(title_frame, text="SESLI YAZI",
+                 font=("Consolas", 14, "bold"), fg=self.TEXT, bg=self.BG
+                 ).pack(side=tk.LEFT)
+        tk.Label(title_frame, text="v2",
+                 font=("Consolas", 8), fg=self.TEXT_DIM, bg=self.BG
+                 ).pack(side=tk.LEFT, padx=(4, 0))
 
-        tk.Label(self.root, text="🎤  Sesli Yazı",
-                 font=("Segoe UI", 14, "bold"), fg="#1e293b", bg=self.BG
-                 ).pack(pady=(12, 4))
+        # ── Divider ──────────────────────────────────────────────────────
+        div = tk.Frame(self.root, bg=self.VIOLET, height=1)
+        div.pack(fill=tk.X, padx=14, pady=(6, 10))
 
-        # ── Mikrofon seçimi ───────────────────────────────────────────────
-        mic_frame = tk.Frame(self.root, bg=self.BG)
-        mic_frame.pack(fill=tk.X, **pad, pady=(0, 4))
+        # ── Mic selector card ────────────────────────────────────────────
+        mic_card = tk.Frame(self.root, bg=self.CARD,
+                            highlightbackground=self.BORDER, highlightthickness=1)
+        mic_card.pack(fill=tk.X, padx=14, pady=(0, 8))
 
-        tk.Label(mic_frame, text="Mikrofon:", font=("Segoe UI", 8, "bold"),
-                 bg=self.BG, fg="#334155").pack(side=tk.LEFT)
+        tk.Label(mic_card, text="  MIC", font=("Consolas", 7, "bold"),
+                 fg=self.CYAN, bg=self.CARD).pack(anchor=tk.W, pady=(6, 0))
+
+        mic_inner = tk.Frame(mic_card, bg=self.CARD)
+        mic_inner.pack(fill=tk.X, padx=8, pady=(2, 8))
 
         self.devices   = get_input_devices()
-        self.mic_names = [d[1][:42] for d in self.devices]
+        self.mic_names = [d[1][:40] for d in self.devices]
         self.mic_var   = tk.StringVar()
 
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Dark.TCombobox",
+                         fieldbackground=self.BG,
+                         background=self.CARD,
+                         foreground=self.TEXT,
+                         selectbackground=self.VIOLET,
+                         selectforeground=self.TEXT,
+                         bordercolor=self.VIOLET,
+                         arrowcolor=self.VIOLET,
+                         font=("Consolas", 8))
+        style.map("Dark.TCombobox",
+                  fieldbackground=[("readonly", self.BG)],
+                  foreground=[("readonly", self.TEXT)])
+
         self.mic_combo = ttk.Combobox(
-            mic_frame, textvariable=self.mic_var,
+            mic_inner, textvariable=self.mic_var,
             values=self.mic_names, state="readonly",
-            width=28, font=("Segoe UI", 8),
+            style="Dark.TCombobox", width=28, font=("Consolas", 8),
         )
-        self.mic_combo.pack(side=tk.LEFT, padx=(6, 0))
+        self.mic_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        refresh_btn = tk.Label(mic_inner, text="⟳", font=("Segoe UI", 12),
+                               fg=self.VIOLET, bg=self.CARD, cursor="hand2")
+        refresh_btn.pack(side=tk.LEFT, padx=(8, 0))
+        refresh_btn.bind("<Button-1>", lambda e: self._refresh_mics())
 
         sel = self._preferred_mic_idx()
         if self.mic_names:
             self.mic_combo.current(sel)
 
-        tk.Button(mic_frame, text="↻", font=("Segoe UI", 10, "bold"),
-                  command=self._refresh_mics, relief=tk.FLAT,
-                  bg="#e2e8f0", cursor="hand2", padx=4
-                  ).pack(side=tk.LEFT, padx=(4, 0))
+        # ── Volume visualizer (7 bars) ───────────────────────────────────
+        self.vol_canvas = tk.Canvas(self.root, width=356, height=28,
+                                    bg=self.BG, highlightthickness=0)
+        self.vol_canvas.pack(padx=14, pady=(0, 4))
+        self._vol_bars = []
+        bar_w, gap, total = 16, 6, 7
+        start_x = (356 - total * (bar_w + gap) + gap) // 2
+        for i in range(total):
+            x0 = start_x + i * (bar_w + gap)
+            bid = self.vol_canvas.create_rectangle(
+                x0, 14, x0 + bar_w, 14,
+                fill=self.TEXT_DIM, outline="", width=0)
+            self._vol_bars.append((bid, x0, bar_w))
+        self._vol_level = 0.0
 
-        # ── Ses seviyesi ──────────────────────────────────────────────────
-        self.vol_var = tk.DoubleVar(value=0)
-        ttk.Progressbar(
-            self.root, variable=self.vol_var,
-            maximum=1.0, length=336, mode="determinate",
-        ).pack(pady=3)
-
-        # ── Durum ─────────────────────────────────────────────────────────
-        self.status_var = tk.StringVar(value="⏳ Başlatılıyor…")
+        # ── Status label ─────────────────────────────────────────────────
+        self.status_var = tk.StringVar(value="⏳  Initializing…")
         self.status_lbl = tk.Label(
             self.root, textvariable=self.status_var,
-            font=("Segoe UI", 9), fg="#d97706", bg=self.BG,
+            font=("Consolas", 9), fg=self.TEXT_DIM, bg=self.BG,
         )
-        self.status_lbl.pack()
+        self.status_lbl.pack(pady=(0, 10))
 
-        # ── Başlat butonu ─────────────────────────────────────────────────
-        self.btn_text = tk.StringVar(value="▶   Başlat")
-        self.btn = tk.Button(
-            self.root, textvariable=self.btn_text,
-            font=("Segoe UI", 12, "bold"),
-            bg=self.BLUE, fg="white",
-            activebackground="#2563eb", activeforeground="white",
-            relief=tk.FLAT, width=16, height=2,
-            command=self._toggle, state=tk.DISABLED, cursor="hand2",
-        )
-        self.btn.pack(pady=6)
+        # ── Round main button (Canvas) ────────────────────────────────────
+        self._btn_running = False
+        btn_size = 110
+        self.btn_canvas = tk.Canvas(self.root, width=btn_size, height=btn_size,
+                                     bg=self.BG, highlightthickness=0)
+        self.btn_canvas.pack(pady=(0, 10))
 
-        # ── Son çevrilen (büyük metin kutusu) ─────────────────────────────
-        tk.Label(self.root, text="Son çevrilen:", font=("Segoe UI", 8, "bold"),
-                 bg=self.BG, fg="#334155").pack(anchor=tk.W, **pad)
+        r = btn_size // 2
+        # Outer glow ring
+        self._btn_ring = self.btn_canvas.create_oval(
+            4, 4, btn_size - 4, btn_size - 4,
+            outline=self.VIOLET, width=2)
+        # Fill circle
+        self._btn_fill = self.btn_canvas.create_oval(
+            12, 12, btn_size - 12, btn_size - 12,
+            fill=self.VIOLET2, outline="")
+        # Icon text
+        self._btn_icon = self.btn_canvas.create_text(
+            r, r - 6, text="▶", font=("Segoe UI", 20, "bold"),
+            fill=self.TEXT)
+        # Label text
+        self._btn_label = self.btn_canvas.create_text(
+            r, r + 18, text="START", font=("Consolas", 8, "bold"),
+            fill=self.TEXT)
 
-        txt_frame = tk.Frame(self.root, bg=self.BG)
-        txt_frame.pack(fill=tk.BOTH, expand=True, **pad, pady=(2, 2))
+        self.btn_canvas.bind("<Button-1>", self._on_btn_click)
+        self.btn_canvas.bind("<Enter>", self._on_btn_enter)
+        self.btn_canvas.bind("<Leave>", self._on_btn_leave)
+        self.btn_canvas.config(cursor="hand2")
+        self._btn_enabled = False  # disabled until model loads
 
-        sb = tk.Scrollbar(txt_frame)
-        sb.pack(side=tk.RIGHT, fill=tk.Y)
+        # Start pulse animation
+        self._pulse_dir = 1
+        self._pulse_val = 0
+        self._animate_pulse()
+
+        # ── Transcript card ───────────────────────────────────────────────
+        tx_card = tk.Frame(self.root, bg=self.CARD,
+                           highlightbackground=self.BORDER, highlightthickness=1)
+        tx_card.pack(fill=tk.BOTH, expand=True, padx=14, pady=(0, 6))
+
+        tx_header = tk.Frame(tx_card, bg=self.CARD)
+        tx_header.pack(fill=tk.X, padx=8, pady=(6, 2))
+        tk.Label(tx_header, text="TRANSCRIPT",
+                 font=("Consolas", 7, "bold"), fg=self.CYAN, bg=self.CARD
+                 ).pack(side=tk.LEFT)
+
+        # Copy / Clear as label-buttons
+        clear_lbl = tk.Label(tx_header, text="✕ clear",
+                             font=("Consolas", 7), fg=self.TEXT_DIM, bg=self.CARD,
+                             cursor="hand2")
+        clear_lbl.pack(side=tk.RIGHT)
+        clear_lbl.bind("<Button-1>", lambda e: self._clear_text())
+        clear_lbl.bind("<Enter>", lambda e: clear_lbl.config(fg=self.RED))
+        clear_lbl.bind("<Leave>", lambda e: clear_lbl.config(fg=self.TEXT_DIM))
+
+        copy_lbl = tk.Label(tx_header, text="⎘ copy",
+                            font=("Consolas", 7), fg=self.TEXT_DIM, bg=self.CARD,
+                            cursor="hand2")
+        copy_lbl.pack(side=tk.RIGHT, padx=(0, 10))
+        copy_lbl.bind("<Button-1>", lambda e: self._copy_all())
+        copy_lbl.bind("<Enter>", lambda e: copy_lbl.config(fg=self.CYAN))
+        copy_lbl.bind("<Leave>", lambda e: copy_lbl.config(fg=self.TEXT_DIM))
+
+        sb = tk.Scrollbar(tx_card, bg=self.CARD)
+        sb.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 2))
 
         self.txt_box = tk.Text(
-            txt_frame, font=("Segoe UI", 10),
-            fg="#1e293b", bg="#ffffff",
-            relief=tk.SOLID, bd=1,
+            tx_card, font=("Consolas", 10),
+            fg=self.TEXT, bg=self.CARD,
+            insertbackground=self.VIOLET,
+            selectbackground=self.VIOLET2,
+            relief=tk.FLAT, bd=0,
             wrap=tk.WORD, state=tk.DISABLED,
-            yscrollcommand=sb.set, height=8,
+            yscrollcommand=sb.set, height=7,
+            padx=8, pady=4,
         )
         self.txt_box.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         sb.config(command=self.txt_box.yview)
 
-        # Kopyala / Temizle butonları
-        btn_row = tk.Frame(self.root, bg=self.BG)
-        btn_row.pack(fill=tk.X, **pad, pady=(2, 4))
-        tk.Button(btn_row, text="📋 Kopyala", font=("Segoe UI", 8),
-                  relief=tk.FLAT, bg="#e2e8f0", cursor="hand2",
-                  command=self._copy_all).pack(side=tk.LEFT)
-        tk.Button(btn_row, text="🗑 Temizle", font=("Segoe UI", 8),
-                  relief=tk.FLAT, bg="#e2e8f0", cursor="hand2",
-                  command=self._clear_text).pack(side=tk.LEFT, padx=(6, 0))
-
+        # ── Footer ────────────────────────────────────────────────────────
         tk.Label(self.root,
-                 text="F9 ile başlat/durdur  •  konuşunca aktif alana yapıştırılır",
-                 font=("Segoe UI", 7), fg="#94a3b8", bg=self.BG,
-                 ).pack(side=tk.BOTTOM, pady=4)
+                 text="F9  start/stop  •  speech auto-pastes to active window",
+                 font=("Consolas", 7), fg=self.TEXT_DIM, bg=self.BG,
+                 ).pack(side=tk.BOTTOM, pady=(2, 6))
+
+    # ── Button animation helpers ──────────────────────────────────────────────
+    def _animate_pulse(self):
+        if not self._btn_running and self._btn_enabled:
+            self._pulse_val += self._pulse_dir * 3
+            if self._pulse_val >= 60:
+                self._pulse_dir = -1
+            elif self._pulse_val <= 0:
+                self._pulse_dir = 1
+            alpha = self._pulse_val
+            # modulate ring brightness
+            r = min(255, 139 + alpha)
+            color = f"#{r:02x}5c{min(255,246):02x}"
+            self.btn_canvas.itemconfig(self._btn_ring, outline=color)
+        self.root.after(40, self._animate_pulse)
+
+    def _on_btn_click(self, _event=None):
+        if self._btn_enabled:
+            self._toggle()
+
+    def _on_btn_enter(self, _event=None):
+        if self._btn_enabled:
+            self.btn_canvas.itemconfig(self._btn_fill,
+                fill=self.RED2 if self._btn_running else self.VIOLET)
+
+    def _on_btn_leave(self, _event=None):
+        self.btn_canvas.itemconfig(self._btn_fill,
+            fill=self.RED2 if self._btn_running else self.VIOLET2)
+
+    def _set_btn_state(self, running: bool):
+        self._btn_running = running
+        if running:
+            self.btn_canvas.itemconfig(self._btn_fill, fill=self.RED2)
+            self.btn_canvas.itemconfig(self._btn_ring, outline=self.RED)
+            self.btn_canvas.itemconfig(self._btn_icon, text="■")
+            self.btn_canvas.itemconfig(self._btn_label, text="STOP")
+        else:
+            self.btn_canvas.itemconfig(self._btn_fill, fill=self.VIOLET2)
+            self.btn_canvas.itemconfig(self._btn_ring, outline=self.VIOLET)
+            self.btn_canvas.itemconfig(self._btn_icon, text="▶")
+            self.btn_canvas.itemconfig(self._btn_label, text="START")
+
+    # ── Volume bars ───────────────────────────────────────────────────────────
+    def _draw_vol_bars(self, level: float):
+        max_h, base_y, canvas_h = 22, 26, 28
+        colors = [self.TEXT_DIM, self.VIOLET, self.VIOLET,
+                  self.CYAN, self.VIOLET, self.VIOLET, self.TEXT_DIM]
+        for i, (bid, x0, bar_w) in enumerate(self._vol_bars):
+            # each bar has a slightly different threshold
+            threshold = (i + 1) / (len(self._vol_bars) + 1)
+            if level >= threshold:
+                h = int(max_h * level)
+                fill = colors[i]
+            else:
+                h = 3
+                fill = self.TEXT_DIM
+            self.vol_canvas.coords(bid, x0, base_y - h, x0 + bar_w, base_y)
+            self.vol_canvas.itemconfig(bid, fill=fill)
+
+
 
     PREFERRED_MIC = "Brio 100"   # bu isim adda geçerse öncelikli seç
 
@@ -419,19 +565,20 @@ class SesliYazi:
     def _set_status(self, text: str):
         self.root.after(0, self.status_var.set, text)
         if "✅" in text:
-            self.root.after(0, lambda: self.status_lbl.config(fg="#16a34a"))
-            self.root.after(0, lambda: self.btn.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.status_lbl.config(fg=self.GREEN))
+            self.root.after(0, lambda: setattr(self, "_btn_enabled", True))
         elif "❌" in text:
-            self.root.after(0, lambda: self.status_lbl.config(fg="#dc2626"))
+            self.root.after(0, lambda: self.status_lbl.config(fg=self.RED))
         elif "⬇" in text or "⏳" in text:
-            self.root.after(0, lambda: self.status_lbl.config(fg="#d97706"))
+            self.root.after(0, lambda: self.status_lbl.config(fg="#f59e0b"))
         elif "⚙" in text:
-            self.root.after(0, lambda: self.status_lbl.config(fg="#7c3aed"))
+            self.root.after(0, lambda: self.status_lbl.config(fg=self.VIOLET))
         else:
-            self.root.after(0, lambda: self.status_lbl.config(fg="#0284c7"))
+            self.root.after(0, lambda: self.status_lbl.config(fg=self.CYAN))
 
     def _set_volume(self, val: float):
-        self.root.after(0, self.vol_var.set, val)
+        self._vol_level = val
+        self.root.after(0, lambda: self._draw_vol_bars(val))
 
     def _got_text(self, text: str):
         def _update():
@@ -478,29 +625,24 @@ class SesliYazi:
     def _toggle(self):
         if self.tr.is_running:
             self.tr.stop()
-            self.root.after(0, self.btn_text.set, "▶   Başlat")
-            self.root.after(0, lambda: self.btn.config(bg=self.BLUE))
-            self._set_status("Durduruldu")
+            self.root.after(0, lambda: self._set_btn_state(False))
+            self._set_status("◼  Stopped")
         else:
-            # Başlat'a basılmadan önce hangi pencere aktifti → oraya paste edilecek
-            # WS_EX_NOACTIVATE sayesinde butona tıklansa bile önceki pencere hâlâ foreground
             global _paste_hwnd
-            raw = ctypes.windll.user32.GetForegroundWindow()  # c_void_p → int or None
+            raw = ctypes.windll.user32.GetForegroundWindow()
             own_val = _own_hwnd.value if isinstance(_own_hwnd, ctypes.c_void_p) else _own_hwnd
             if raw and int(raw) != (own_val or 0):
                 _paste_hwnd = ctypes.c_void_p(int(raw))
-            # Durum label'ına hedef pencere adını yaz
             try:
                 buf = ctypes.create_unicode_buffer(128)
                 ctypes.windll.user32.GetWindowTextW(_paste_hwnd, buf, 128)
-                win_title = buf.value[:28] or "?"
+                win_title = buf.value[:26] or "?"
             except Exception:
                 win_title = "?"
             dev = self._selected_device_idx()
             if self.tr.start(device_idx=dev):
-                self.root.after(0, self.btn_text.set, "■   Durdur")
-                self.root.after(0, lambda: self.btn.config(bg=self.RED))
-                self._set_status(f"🎙 → '{win_title}'")
+                self.root.after(0, lambda: self._set_btn_state(True))
+                self._set_status(f"🎙  Listening → '{win_title}'")
 
     def run(self):
         self.root.protocol("WM_DELETE_WINDOW", self._close)

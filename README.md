@@ -1,62 +1,88 @@
-# 🎙 Sesli Yazı — Gerçek Zamanlı Türkçe Ses Yazıcı
+# ⬡ Sesli Yazı — Real-Time Turkish Speech-to-Text
 
-Konuştuğunuzda, ekranda hangi pencere açıksa (Not Defteri, Word, tarayıcı vb.) metni otomatik olarak yazar. Tamamen yerel çalışır — internet, API veya ücret yok.
+> **Speak. It types.** Anywhere on your screen.
 
-## Özellikler
+Sesli Yazı listens to your microphone and automatically types the transcribed text into whatever window you are using — Notepad, Word, browser, chat app, anything. Runs **100% offline** on your CPU, no API keys, no subscriptions, no data ever leaves your machine.
 
-- 🎙 Mikrofon seçimi (birden fazla cihaz desteklenir)
-- ⌨️ Konuşulan metin aktif pencereye otomatik yapıştırılır
-- 🇹🇷 Türkçe için optimize (faster-whisper large-v3-turbo modeli)
-- 🔒 Tamamen offline — hiçbir veri dışarı gönderilmez
-- ⚡ F9 kısayol tuşu ile başlat/durdur
-- 📋 Kopyala / Temizle butonları
+![dark ui](https://img.shields.io/badge/UI-dark%20cyberpunk-8b5cf6?style=flat-square) ![offline](https://img.shields.io/badge/runs-offline-10b981?style=flat-square) ![lang](https://img.shields.io/badge/language-Turkish-ef4444?style=flat-square) ![model](https://img.shields.io/badge/model-large--v3--turbo-22d3ee?style=flat-square)
 
-## Hızlı Kurulum (Başka Bir Windows PC)
+---
 
-1. Bu repoyu indirin (ZIP veya `git clone`)
-2. `setup.bat` dosyasına çift tıklayın
-3. Masaüstünde oluşan **Sesli Yazı** kısayoluna tıklayın
-4. İlk açılışta model (~809 MB) otomatik indirilir — sonraki açılışlarda internet gerekmez
+## Features
 
-### Gereksinimler
+| | |
+|---|---|
+| 🎙 | Microphone selector with auto-detect (prefers Brio 100) |
+| ⌨️ | Transcribed text is auto-pasted into the active window |
+| 🇹🇷 | Optimised for Turkish with `large-v3-turbo` model |
+| 🔒 | Fully offline — no internet after first model download |
+| ⚡ | **F9** global hotkey to start / stop anywhere |
+| 🌑 | Dark cyberpunk UI with animated volume bars |
 
-- Windows 10/11 (64-bit)
-- Python 3.9+ ([python.org](https://www.python.org/downloads/))
-- 8 GB RAM önerilir (minimum 4 GB)
-- ~1 GB disk alanı (model için)
+---
 
-## Manuel Kurulum
+## Quick Start (Another Windows PC)
+
+1. Clone or download this repo as ZIP
+2. Double-click **`setup.bat`**
+   - Installs Python dependencies automatically
+   - Creates a **Sesli Yazı** shortcut on your Desktop
+3. Click the shortcut — on first launch the model (~809 MB) downloads automatically
+4. Once ready, click any text field anywhere, press **START** or **F9**, and speak
+
+### Requirements
+
+- Windows 10 / 11 (64-bit)
+- Python 3.9+ — [python.org](https://www.python.org/downloads/) *(tick "Add to PATH" during install)*
+- 4 GB RAM minimum, 8 GB recommended
+- ~1 GB free disk space for the model
+
+---
+
+## Manual Installation
 
 ```bash
 pip install -r requirements_app.txt
 python voice_typer.py
 ```
 
-## Kullanım
+---
 
-1. Uygulamayı açın — model yüklenir (ilk kez ~2 dk, sonraki açılışlarda ~10 sn)
-2. Metin yazmak istediğiniz pencereye tıklayın
-3. **Başlat** butonuna veya **F9** tuşuna basın
-4. Türkçe konuşun → metin o pencereye otomatik yazılır
-5. Durmak için tekrar **Başlat/Durdur** veya **F9**
+## How to Use
 
-## Kullanılan Teknolojiler
+```
+1. Open any app you want to type into (Notepad, Word, browser …)
+2. Click inside its text area
+3. Press START button or F9
+4. Speak Turkish — text appears in real time
+5. Press STOP / F9 to stop
+```
 
-| Bileşen | Açıklama |
-|---------|----------|
-| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Ses tanıma motoru (CTranslate2 tabanlı) |
-| [large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | Dil modeli |
-| sounddevice | Mikrofon erişimi |
-| pynput | Klavye simülasyonu |
-| tkinter | Arayüz |
+---
 
-## Notlar
+## Tech Stack
 
-- GPU gerekmez, CPU ile çalışır
-- Model `~/.cache/sesli_yazi/` klasörüne indirilir
-- Ses işleme tamamen yerel yapılır
+| Component | Role |
+|-----------|------|
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Speech recognition engine (CTranslate2) |
+| [large-v3-turbo](https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo) | AI language model |
+| sounddevice | Microphone capture at 16 kHz |
+| pynput | Keyboard simulation (Ctrl+V) |
+| tkinter | GUI framework |
+| ctypes | Windows API (WS_EX_NOACTIVATE, clipboard) |
 
-## Lisans
+---
+
+## Performance Notes
+
+- **No GPU required** — runs on any modern x64 CPU
+- `beam_size=1` for minimum latency (~1 s response after speech ends)
+- Model is cached at `~/.cache/sesli_yazi/` after first download
+- All audio processing is local — zero data sent externally
+
+---
+
+## License
 
 MIT
 
