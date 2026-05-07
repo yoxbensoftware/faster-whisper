@@ -39,6 +39,24 @@ if errorlevel 1 (
 for /f "tokens=*" %%v in ('python --version 2^>^&1') do echo [OK] %%v bulundu.
 echo.
 
+:: ── ARM64 kontrol ────────────────────────────────────────────────────────────
+for /f "tokens=*" %%a in ('python -c "import platform; print(platform.machine())"') do set PY_ARCH=%%a
+if /i "%PY_ARCH%"=="ARM64" (
+    echo.
+    echo  [HATA] ARM64 Python tespit edildi!
+    echo.
+    echo  Bu uygulama ARM64 Python ile calismiyor.
+    echo  Lutfen x64 (64-bit) Python yukleyin:
+    echo.
+    echo    1. https://www.python.org/downloads/ adresine gidin
+    echo    2. "Windows installer (64-bit)" secin  ^(ARM64 degil^)
+    echo    3. Kurulumda "Add Python to PATH" kutusunu isaretleyin
+    echo    4. Bu setup.bat'i tekrar calistirin
+    echo.
+    pause
+    exit /b 1
+)
+
 :: ── 2. Pip guncelle ──────────────────────────────────────────────────────────
 echo [1/3] pip guncelleniyor...
 python -m pip install --upgrade pip
