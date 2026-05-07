@@ -115,6 +115,7 @@ class AudioTranscriber:
         self.model      = None
         self.kb         = Controller()
         self.q          = queue.Queue()
+        self._tx_q      = queue.Queue()   # transcription jobs (non-blocking)
         self.is_running = False
         self.buf        = []
         self.sil_count  = 0
@@ -169,6 +170,7 @@ class AudioTranscriber:
         self.on_volume(0)
 
     def _flush(self):
+        """Called from audio loop — copies buf and queues transcription."""
         audio = np.array(self.buf, dtype=np.float32)
         self.buf       = []
         self.sil_count = 0
@@ -176,25 +178,33 @@ class AudioTranscriber:
             if self.is_running:
                 self.on_status("🎙 Dinleniyor…")
             return
-        self.on_status("⚙ Çevriliyor…")
-        try:
-            segs, _ = self.model.transcribe(
-                audio,
-                language="tr",
-                beam_size=1,
-                initial_prompt="Türkçe konuşma. Doğal, akıcı cümleler.",
-                vad_filter=True,
-                vad_parameters={"min_silence_duration_ms": 300},
-                condition_on_previous_text=False,
-            )
-            text = " ".join(s.text.strip() for s in segs).strip()
-            if text:
-                self.on_text(text)
-        except Exception as e:
-            self.on_status(f"❌ Hata: {e}")
-        finally:
-            if self.is_running:
-                self.on_status("🎙 Dinleniyor…")
+        self._tx_q.put(audio)   # hand off — audio loop keeps running immediately
+
+    def _transcribe_worker(self):
+        """Dedicated thread: serialises model calls so the audio loop never blocks."""
+        while True:
+            audio = self._tx_q.get()
+            if audio is None:   # stop sentinel
+                break
+            self.on_status("⚙ Çevriliyor…")
+            try:
+                segs, _ = self.model.transcribe(
+                    audio,
+                    language="tr",
+                    beam_size=1,
+                    initial_prompt="Türkçe konuşma. Doğal, akıcı cümleler.",
+                    vad_filter=True,
+                    vad_parameters={"min_silence_duration_ms": 300},
+                    condition_on_previous_text=False,
+                )
+                text = " ".join(s.text.strip() for s in segs).strip()
+                if text:
+                    self.on_text(text)
+            except Exception as e:
+                self.on_status(f"❌ Hata: {e}")
+            finally:
+                if self.is_running:
+                    self.on_status("🎙 Dinleniyor…")
 
     def start(self, device_idx=None) -> bool:
         if not self.model:
@@ -202,6 +212,8 @@ class AudioTranscriber:
         self.is_running = True
         self.buf        = []
         self.sil_count  = 0
+        self._tx_q      = queue.Queue()
+        threading.Thread(target=self._transcribe_worker, daemon=True).start()
         try:
             self.stream = sd.InputStream(
                 samplerate=SAMPLE_RATE,
@@ -221,6 +233,8 @@ class AudioTranscriber:
 
     def stop(self):
         self.is_running = False
+        if hasattr(self, "_tx_q"):
+            self._tx_q.put(None)  # stop transcription worker
         if hasattr(self, "stream"):
             try:
                 self.stream.stop()
