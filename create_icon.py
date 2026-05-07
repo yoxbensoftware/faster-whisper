@@ -20,58 +20,42 @@ WHITE   = (226, 232, 240, 255)   # #e2e8f0
 
 
 def draw_icon(size: int) -> Image.Image:
+    """Clean white mic on solid violet — readable at 16x16 and up."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d   = ImageDraw.Draw(img)
     cx = cy = size / 2
 
-    # ── Background circle ─────────────────────────────────────────────────────
-    m = size * 0.03
-    d.ellipse([m, m, size - m, size - m], fill=DARK)
+    # Solid violet circle background
+    d.ellipse([0, 0, size - 1, size - 1], fill=(*VIOLET2[:3], 255))
 
-    # ── Outer glow rings (violet, layered transparency) ───────────────────────
-    ring_w = max(1, size // 18)
-    for i, alpha in enumerate([30, 60, 130]):
-        rm = m - i * (size / 28)
-        d.ellipse([rm, rm, size - rm, size - rm],
-                  outline=(*VIOLET[:3], alpha), width=ring_w)
+    # Mic capsule — white bold pill
+    mw = size * 0.175
+    mt = size * 0.12
+    mb = size * 0.55
+    d.ellipse([cx - mw, mt, cx + mw, mt + mw * 2],         fill=(255, 255, 255, 255))
+    d.rectangle([cx - mw, mt + mw, cx + mw, mb - mw],      fill=(255, 255, 255, 255))
+    d.ellipse([cx - mw, mb - mw * 2, cx + mw, mb],         fill=(255, 255, 255, 255))
 
-    # ── Inner accent ring (cyan, thin) ────────────────────────────────────────
-    inner = size * 0.16
-    d.ellipse([inner, inner, size - inner, size - inner],
-              outline=(*CYAN[:3], 90), width=max(1, size // 40))
-
-    # ── Mic capsule (violet pill, properly elongated) ─────────────────────────
-    mw  = size * 0.115          # half-width
-    mt  = size * 0.13           # top
-    mb  = size * 0.52           # bottom  (height/width ≈ 1.7 → pill shaped)
-    rad = mw
-    # top cap
-    d.ellipse([cx - mw, mt, cx + mw, mt + rad * 2],          fill=VIOLET)
-    # body
-    d.rectangle([cx - mw, mt + rad, cx + mw, mb - rad],      fill=VIOLET)
-    # bottom cap
-    d.ellipse([cx - mw, mb - rad * 2, cx + mw, mb],           fill=VIOLET)
-
-    # ── Stand arc (cyan U-shape) ──────────────────────────────────────────────
-    aw  = size * 0.305
-    at  = size * 0.385
+    # Stand arc — white
+    aw  = size * 0.30
+    at  = size * 0.42
     ab  = size * 0.66
-    alw = max(2, size // 20)
+    alw = max(2, size // 16)
     d.arc([cx - aw, at, cx + aw, ab], start=0, end=180,
-          fill=(*CYAN[:3], 230), width=alw)
+          fill=(255, 255, 255, 220), width=alw)
 
-    # ── Stem ─────────────────────────────────────────────────────────────────
+    # Stem
     stem_top = (at + ab) / 2
     stem_bot = size * 0.80
     sw = alw
     d.rectangle([cx - sw / 2, stem_top, cx + sw / 2, stem_bot],
-                fill=(*CYAN[:3], 230))
+                fill=(255, 255, 255, 220))
 
-    # ── Base ─────────────────────────────────────────────────────────────────
-    bw  = size * 0.24
-    bh  = max(2, size // 22)
+    # Base
+    bw = size * 0.22
+    bh = max(2, size // 20)
     d.rectangle([cx - bw, stem_bot, cx + bw, stem_bot + bh],
-                fill=(*CYAN[:3], 230))
+                fill=(255, 255, 255, 220))
 
     return img
 

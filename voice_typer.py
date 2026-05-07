@@ -166,7 +166,8 @@ class AudioTranscriber:
                 if self.sil_count >= self.max_sil:
                     self._flush()
         if self.buf:
-            self._flush()
+            self._flush()          # flush immediately on stop
+        self._tx_q.put(None)       # stop transcription worker after final job
         self.on_volume(0)
 
     def _flush(self):
@@ -233,8 +234,7 @@ class AudioTranscriber:
 
     def stop(self):
         self.is_running = False
-        if hasattr(self, "_tx_q"):
-            self._tx_q.put(None)  # stop transcription worker
+        # _loop thread flushes remaining buffer then sends None sentinel to _tx_q
         if hasattr(self, "stream"):
             try:
                 self.stream.stop()
@@ -261,18 +261,19 @@ class SesliYazi:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Sesli Yazı")
-        self.root.resizable(False, True)
+        self.root.title("oXben - SpeechXText")
+        self.root.overrideredirect(True)
+        self.root.resizable(False, False)
         self.root.configure(bg=self.BG)
         self.root.attributes("-topmost", True)
+        self.root.attributes("-alpha", 0.95)
         sw = self.root.winfo_screenwidth()
-        self.root.geometry(f"380x560+{sw - 395}+10")
+        self.root.geometry(f"380x590+{sw - 395}+10")
         self._set_icon()
         self._build_ui()
 
         self.root.update()
         self._apply_noactivate()
-        self._apply_rounded_corners()
 
         self.tr = AudioTranscriber(
             on_text   = self._got_text,
@@ -330,21 +331,29 @@ class SesliYazi:
         return os.path.join(base, name)
 
     def _build_ui(self):
-        # ── Title bar ────────────────────────────────────────────────────
-        title_frame = tk.Frame(self.root, bg=self.BG)
-        title_frame.pack(fill=tk.X, pady=(14, 0))
-        tk.Label(title_frame, text="⬡", font=("Segoe UI", 18),
-                 fg=self.VIOLET, bg=self.BG).pack(side=tk.LEFT, padx=(14, 6))
-        tk.Label(title_frame, text="SESLI YAZI",
-                 font=("Consolas", 14, "bold"), fg=self.TEXT, bg=self.BG
-                 ).pack(side=tk.LEFT)
-        tk.Label(title_frame, text="v2",
-                 font=("Consolas", 8), fg=self.TEXT_DIM, bg=self.BG
-                 ).pack(side=tk.LEFT, padx=(4, 0))
+        # ── Custom title bar (drag + close) ───────────────────────────
+        title_bar = tk.Frame(self.root, bg=self.CARD, height=36)
+        title_bar.pack(fill=tk.X)
+        title_bar.pack_propagate(False)
+        title_bar.bind("<ButtonPress-1>", self._drag_start)
+        title_bar.bind("<B1-Motion>",     self._drag_move)
 
-        # ── Divider ──────────────────────────────────────────────────────
-        div = tk.Frame(self.root, bg=self.VIOLET, height=1)
-        div.pack(fill=tk.X, padx=14, pady=(6, 10))
+        tk.Label(title_bar, text="⬡", font=("Segoe UI", 13),
+                 fg=self.VIOLET, bg=self.CARD).pack(side=tk.LEFT, padx=(12, 5), pady=8)
+        tk.Label(title_bar, text="oXben · SpeechXText",
+                 font=("Consolas", 9, "bold"), fg=self.TEXT, bg=self.CARD,
+                 ).pack(side=tk.LEFT, pady=8)
+
+        close_btn = tk.Label(title_bar, text="✕",
+                             font=("Consolas", 11, "bold"), fg=self.TEXT_DIM,
+                             bg=self.CARD, cursor="hand2")
+        close_btn.pack(side=tk.RIGHT, padx=(0, 12), pady=8)
+        close_btn.bind("<Button-1>", lambda e: self.root.destroy())
+        close_btn.bind("<Enter>",    lambda e: close_btn.config(fg=self.RED))
+        close_btn.bind("<Leave>",    lambda e: close_btn.config(fg=self.TEXT_DIM))
+
+        # Violet divider
+        tk.Frame(self.root, bg=self.VIOLET, height=1).pack(fill=tk.X, pady=(0, 10))
 
         # ── Mic selector card ────────────────────────────────────────────
         mic_card = tk.Frame(self.root, bg=self.CARD,
@@ -500,7 +509,7 @@ class SesliYazi:
         footer.pack(side=tk.BOTTOM, fill=tk.X, pady=(2, 8))
 
         tk.Label(footer,
-                 text="F9 start/stop  •  speech auto-pastes to active window",
+                 text="F9 start/stop  •  STOP mid-speech → instant transcribe",
                  font=("Consolas", 7), fg=self.TEXT_DIM, bg=self.BG,
                  ).pack(side=tk.TOP)
 
@@ -556,6 +565,13 @@ class SesliYazi:
     def _on_btn_leave(self, _event=None):
         self.btn_canvas.itemconfig(self._btn_fill,
             fill=self.RED2 if self._btn_running else self.VIOLET2)
+
+    def _drag_start(self, event):
+        self._drag_x = event.x_root - self.root.winfo_x()
+        self._drag_y = event.y_root - self.root.winfo_y()
+
+    def _drag_move(self, event):
+        self.root.geometry(f"+{event.x_root - self._drag_x}+{event.y_root - self._drag_y}")
 
     def _set_btn_state(self, running: bool):
         self._btn_running = running
