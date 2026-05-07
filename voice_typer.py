@@ -680,29 +680,33 @@ class SesliYazi:
         self._vol_level = val
         self.root.after(0, lambda: self._draw_vol_bars(val))
 
-    # Voice commands — exact match (case-insensitive, stripped)
+    # Voice commands — stripped from output (case-insensitive, whole word)
     _VOICE_STOP_WORDS = {"stop", "dur", "durdur"}
 
+    def _clean_text(self, text: str) -> str:
+        """Remove voice command words from transcript (whole-word, case-insensitive)."""
+        import re
+        pattern = r'(?i)\b(' + '|'.join(re.escape(w) for w in self._VOICE_STOP_WORDS) + r')\b[.,!?]?\s*'
+        return re.sub(pattern, '', text).strip()
+
     def _got_text(self, text: str):
-        # Check for voice command before pasting
-        normalized = text.strip().rstrip(".!?,").lower()
-        if normalized in self._VOICE_STOP_WORDS:
-            self.root.after(0, self._flush_now)   # instant transcribe, keep recording
+        cleaned = self._clean_text(text)
+        if not cleaned:
             return
 
         def _update():
             self.txt_box.config(state=tk.NORMAL)
             content = self.txt_box.get("1.0", tk.END).strip()
             if content:
-                self.txt_box.insert(tk.END, "\n" + text)
+                self.txt_box.insert(tk.END, "\n" + cleaned)
             else:
-                self.txt_box.insert(tk.END, text)
+                self.txt_box.insert(tk.END, cleaned)
             self.txt_box.see(tk.END)
             self.txt_box.config(state=tk.DISABLED)
         self.root.after(0, _update)
         # Paste'i UI thread'inde yap (50ms sonra, UI güncellemesi bittikten sonra)
         hwnd_snapshot = _paste_hwnd
-        self.root.after(50, lambda: self._do_paste(hwnd_snapshot, text))
+        self.root.after(50, lambda: self._do_paste(hwnd_snapshot, cleaned))
 
     def _do_paste(self, target_hwnd, text: str) -> None:
         """UI thread'de çalışır. Clipboard'a yaz, Ctrl+V gönder."""
