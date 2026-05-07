@@ -9,6 +9,7 @@ import threading
 import queue
 import ctypes
 import time
+import webbrowser
 
 import numpy as np
 import sounddevice as sd
@@ -481,10 +482,38 @@ class SesliYazi:
         sb.config(command=self.txt_box.yview)
 
         # ── Footer ────────────────────────────────────────────────────────
-        tk.Label(self.root,
-                 text="F9  start/stop  •  speech auto-pastes to active window",
+        footer = tk.Frame(self.root, bg=self.BG)
+        footer.pack(side=tk.BOTTOM, fill=tk.X, pady=(2, 8))
+
+        tk.Label(footer,
+                 text="F9 start/stop  •  speech auto-pastes to active window",
                  font=("Consolas", 7), fg=self.TEXT_DIM, bg=self.BG,
-                 ).pack(side=tk.BOTTOM, pady=(2, 6))
+                 ).pack(side=tk.TOP)
+
+        credit = tk.Frame(footer, bg=self.BG)
+        credit.pack(side=tk.TOP, pady=(3, 0))
+
+        oz_lbl = tk.Label(credit, text="Oz",
+                          font=("Consolas", 8, "bold"), fg=self.VIOLET, bg=self.BG,
+                          cursor="hand2")
+        oz_lbl.pack(side=tk.LEFT)
+        oz_lbl.bind("<Button-1>", lambda e: webbrowser.open("https://linkedin.com/in/ozgenc"))
+        oz_lbl.bind("<Enter>", lambda e: oz_lbl.config(fg=self.CYAN))
+        oz_lbl.bind("<Leave>", lambda e: oz_lbl.config(fg=self.VIOLET))
+
+        tk.Label(credit, text=" · ",
+                 font=("Consolas", 8), fg=self.TEXT_DIM, bg=self.BG).pack(side=tk.LEFT)
+
+        ox_lbl = tk.Label(credit, text="oXben",
+                          font=("Consolas", 8, "bold"), fg=self.CYAN, bg=self.BG,
+                          cursor="hand2")
+        ox_lbl.pack(side=tk.LEFT)
+        ox_lbl.bind("<Button-1>", lambda e: webbrowser.open("https://oxben.com.tr"))
+        ox_lbl.bind("<Enter>", lambda e: ox_lbl.config(fg=self.VIOLET))
+        ox_lbl.bind("<Leave>", lambda e: ox_lbl.config(fg=self.CYAN))
+
+        tk.Label(credit, text="  v1.0",
+                 font=("Consolas", 8), fg=self.TEXT_DIM, bg=self.BG).pack(side=tk.LEFT)
 
     # ── Button animation helpers ──────────────────────────────────────────────
     def _animate_pulse(self):
