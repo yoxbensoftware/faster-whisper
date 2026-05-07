@@ -6,6 +6,13 @@ __pycache__/
 
 # Distribution / Packaging
 venv/
+.venv/
+dist/
+build/
+*.spec
+*.egg-info/
+icon.ico
+build_log*.txt
 
 # Unit Test
 .pytest_cache/

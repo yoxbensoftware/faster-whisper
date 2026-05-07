@@ -21,9 +21,10 @@ from tkinter import ttk
 # ─── Ayarlar ──────────────────────────────────────────────────────────────────
 SAMPLE_RATE       = 16000
 CHUNK_SECONDS     = 0.5
-SILENCE_THRESHOLD = 0.012
-SILENCE_SECONDS   = 0.7
+SILENCE_THRESHOLD = 0.008   # daha düşük = gürültülü ortamda da çalışır
+SILENCE_SECONDS   = 0.8
 MIN_AUDIO_SECONDS = 0.3
+MAX_BUFFER_SECONDS = 12     # max bu kadar ses birikirsa zorla flush et
 MODEL_SIZE        = "large-v3-turbo"
 MODEL_CACHE       = os.path.join(os.path.expanduser("~"), ".cache", "sesli_yazi")
 # ──────────────────────────────────────────────────────────────────────────────
@@ -149,6 +150,7 @@ class AudioTranscriber:
             self.q.put(indata.copy())
 
     def _loop(self):
+        max_buf_samples = int(SAMPLE_RATE * MAX_BUFFER_SECONDS)
         while self.is_running:
             try:
                 chunk = self.q.get(timeout=0.1)
@@ -160,6 +162,9 @@ class AudioTranscriber:
             if rms > SILENCE_THRESHOLD:
                 self.buf.extend(data)
                 self.sil_count = 0
+                # Buffer çok büyürse zorla flush et (kesintisiz konuşma)
+                if len(self.buf) >= max_buf_samples:
+                    self._flush()
             elif self.buf:
                 self.buf.extend(data)
                 self.sil_count += 1
@@ -194,8 +199,7 @@ class AudioTranscriber:
                     language="tr",
                     beam_size=1,
                     initial_prompt="Türkçe konuşma. Doğal, akıcı cümleler.",
-                    vad_filter=True,
-                    vad_parameters={"min_silence_duration_ms": 300},
+                    vad_filter=False,
                     condition_on_previous_text=False,
                 )
                 text = " ".join(s.text.strip() for s in segs).strip()
