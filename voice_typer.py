@@ -274,6 +274,7 @@ class SesliYazi:
 
         self.root.update()
         self._apply_noactivate()
+        self._bind_drag_all(self.root)
 
         self.tr = AudioTranscriber(
             on_text   = self._got_text,
@@ -572,6 +573,15 @@ class SesliYazi:
 
     def _drag_move(self, event):
         self.root.geometry(f"+{event.x_root - self._drag_x}+{event.y_root - self._drag_y}")
+
+    def _bind_drag_all(self, widget):
+        """Recursively bind drag to every widget except interactive ones."""
+        skip = (ttk.Combobox, tk.Text, tk.Scrollbar)
+        if not isinstance(widget, skip):
+            widget.bind("<ButtonPress-1>", self._drag_start, add="+")
+            widget.bind("<B1-Motion>",     self._drag_move,  add="+")
+        for child in widget.winfo_children():
+            self._bind_drag_all(child)
 
     def _set_btn_state(self, running: bool):
         self._btn_running = running
