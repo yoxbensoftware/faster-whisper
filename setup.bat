@@ -86,6 +86,13 @@ echo [3/3] Masaustu kisayolu olusturuluyor...
 set SCRIPT_DIR=%~dp0
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0_make_shortcut.ps1" "%~dp0"
+if errorlevel 1 (
+    echo.
+    echo [UYARI] Kisayol olusturulamadi. Elle olusturmak icin:
+    echo   - voice_typer.py dosyasina sag tiklayin
+    echo   - "Kisayol Olustur" secin ve masaustune tasiyin
+    echo.
+)
 
 echo.
 echo  ============================================

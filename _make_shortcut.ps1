@@ -1,19 +1,38 @@
 param([string]$ScriptDir)
 
+$ErrorActionPreference = 'Stop'
+
 $desktop     = [Environment]::GetFolderPath('Desktop')
 $shortcut    = Join-Path $desktop 'oXben - SpeechXText.lnk'
 $voiceTyper  = Join-Path $ScriptDir 'voice_typer.py'
 $srcIcon     = Join-Path $ScriptDir 'icon.ico'
 
+# voice_typer.py kontrolu
+if (-not (Test-Path $voiceTyper)) {
+    Write-Error "voice_typer.py bulunamadi: $voiceTyper"
+    exit 1
+}
+
 # Copy icon to a path with NO special/unicode characters so Windows loads it reliably
 $iconDir  = Join-Path $env:APPDATA 'oXben'
 $iconPath = Join-Path $iconDir 'icon.ico'
 if (-not (Test-Path $iconDir)) { New-Item -ItemType Directory -Path $iconDir | Out-Null }
-Copy-Item -Path $srcIcon -Destination $iconPath -Force
-Write-Host "[OK] Ikon kopyalandi: $iconPath"
+
+if (Test-Path $srcIcon) {
+    Copy-Item -Path $srcIcon -Destination $iconPath -Force
+    Write-Host "[OK] Ikon kopyalandi: $iconPath"
+} else {
+    Write-Host "[UYARI] icon.ico bulunamadi, ikonsuz kisayol olusturuluyor."
+    $iconPath = $null
+}
 
 # Find pythonw.exe next to python.exe
-$pythonExe   = (Get-Command python.exe -ErrorAction Stop).Source
+try {
+    $pythonExe = (Get-Command python.exe -ErrorAction Stop).Source
+} catch {
+    Write-Error "python.exe PATH'te bulunamadi. Python'un PATH'e ekli oldugunu dogrulayin."
+    exit 1
+}
 $pythonwExe  = $pythonExe -replace 'python\.exe$','pythonw.exe'
 if (-not (Test-Path $pythonwExe)) { $pythonwExe = $pythonExe }
 
@@ -22,7 +41,7 @@ $sc = $ws.CreateShortcut($shortcut)
 $sc.TargetPath      = $pythonwExe
 $sc.Arguments       = "`"$voiceTyper`""
 $sc.WorkingDirectory = $ScriptDir
-$sc.IconLocation    = "$iconPath,0"
+if ($iconPath) { $sc.IconLocation = "$iconPath,0" }
 $sc.Description     = 'oXben - SpeechXText — Real-Time Turkish Dictation'
 $sc.Save()
 
