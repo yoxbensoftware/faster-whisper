@@ -56,10 +56,18 @@ python voice_typer.py
 1. Open any app you want to type into (Notepad, Word, browser …)
 2. Click inside its text area
 3. Press START button or F9
-4. Speak Turkish — text appears in real time
-5. Press **F10** to instantly transcribe mid-speech (keeps recording)
-6. Press STOP / F9 to stop
+4. Speak — text is transcribed and pasted in real time
+5. Press F10 or say "stop" to flush mid-speech (keeps recording)
+6. Press STOP button or F9 to stop recording
 ```
+
+## Voice Commands
+
+| Word | Action |
+|------|--------|
+| `stop` | Instantly transcribes current speech, removes the word from output, keeps recording |
+| `dur` | Same as `stop` (Turkish) |
+| `durdur` | Same as `stop` (Turkish) |
 
 ---
 
@@ -80,7 +88,7 @@ python voice_typer.py
 
 - **No GPU required** — runs on any modern x64 CPU
 - `beam_size=1` for minimum latency (~1 s response after speech ends)
-- Model is cached at `~/.cache/sesli_yazi/` after first download (~809 MB, one-time)
+- Model is cached at `~/.cache/oxben_speechxtext/` after first download (~809 MB, one-time)
 - Built by [Oz](https://linkedin.com/in/ozgenc) · [oXben](https://oxben.com.tr)
 - All audio processing is local — zero data sent externally
 
