@@ -62,19 +62,7 @@ echo.
 echo [3/3] Masaustu kisayolu olusturuluyor...
 set SCRIPT_DIR=%~dp0
 
-powershell -NoProfile -Command ^
-  "$ws = New-Object -ComObject WScript.Shell; ^
-   $desktop = [Environment]::GetFolderPath('Desktop'); ^
-   $sc = $ws.CreateShortcut($desktop + '\Sesli Yazi.lnk'); ^
-   $py = (Get-Command python.exe).Source -replace 'python.exe','pythonw.exe'; ^
-   if (-not (Test-Path $py)) { $py = (Get-Command python.exe).Source }; ^
-   $sc.TargetPath = $py; ^
-   $sc.Arguments = '\""%SCRIPT_DIR%voice_typer.py\"\"'; ^
-   $sc.WorkingDirectory = '%SCRIPT_DIR%'; ^
-   $sc.IconLocation = '%SCRIPT_DIR%icon.ico'; ^
-   $sc.Description = 'Sesli Yazi - Real-Time Turkish Dictation'; ^
-   $sc.Save(); ^
-   Write-Host ('[OK] Kisayol olusturuldu: ' + $desktop + '\Sesli Yazi.lnk')"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0_make_shortcut.ps1" "%~dp0"
 
 echo.
 echo  ============================================
