@@ -273,7 +273,7 @@ class SesliYazi:
         self.root.attributes("-topmost", True)
         self.root.attributes("-alpha", 0.95)
         sw = self.root.winfo_screenwidth()
-        self.root.geometry(f"380x590+{sw - 395}+10")
+        self.root.geometry(f"380x630+{sw - 395}+10")
         self._set_icon()
         self._build_ui()
 
