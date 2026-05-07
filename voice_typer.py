@@ -680,7 +680,16 @@ class SesliYazi:
         self._vol_level = val
         self.root.after(0, lambda: self._draw_vol_bars(val))
 
+    # Voice commands — exact match (case-insensitive, stripped)
+    _VOICE_STOP_WORDS = {"stop", "dur", "durdur"}
+
     def _got_text(self, text: str):
+        # Check for voice command before pasting
+        normalized = text.strip().rstrip(".!?,").lower()
+        if normalized in self._VOICE_STOP_WORDS:
+            self.root.after(0, self._flush_now)   # instant transcribe, keep recording
+            return
+
         def _update():
             self.txt_box.config(state=tk.NORMAL)
             content = self.txt_box.get("1.0", tk.END).strip()
