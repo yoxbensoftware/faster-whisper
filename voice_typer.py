@@ -232,6 +232,11 @@ class AudioTranscriber:
         threading.Thread(target=self._loop, daemon=True).start()
         return True
 
+    def flush_now(self):
+        """Flush current buffer immediately without stopping — triggered by F10."""
+        if self.is_running and self.buf:
+            self._flush()
+
     def stop(self):
         self.is_running = False
         # _loop thread flushes remaining buffer then sends None sentinel to _tx_q
@@ -283,7 +288,7 @@ class SesliYazi:
         )
         threading.Thread(target=self.tr.load_model, daemon=True).start()
 
-        self.hk = GlobalHotKeys({"<f9>": self._toggle})
+        self.hk = GlobalHotKeys({"<f9>": self._toggle, "<f10>": self._flush_now})
         self.hk.start()
 
     def _apply_rounded_corners(self):
@@ -339,8 +344,16 @@ class SesliYazi:
         title_bar.bind("<ButtonPress-1>", self._drag_start)
         title_bar.bind("<B1-Motion>",     self._drag_move)
 
-        tk.Label(title_bar, text="⬡", font=("Segoe UI", 13),
-                 fg=self.VIOLET, bg=self.CARD).pack(side=tk.LEFT, padx=(12, 5), pady=8)
+        # Try to show actual icon image in title bar
+        try:
+            from PIL import Image, ImageTk
+            _ico = Image.open(self._res("icon.ico")).resize((20, 20), Image.LANCZOS)
+            self._title_icon_img = ImageTk.PhotoImage(_ico)
+            tk.Label(title_bar, image=self._title_icon_img,
+                     bg=self.CARD).pack(side=tk.LEFT, padx=(10, 4), pady=8)
+        except Exception:
+            tk.Label(title_bar, text="⬡", font=("Segoe UI", 13),
+                     fg=self.VIOLET, bg=self.CARD).pack(side=tk.LEFT, padx=(12, 5), pady=8)
         tk.Label(title_bar, text="oXben · SpeechXText",
                  font=("Consolas", 9, "bold"), fg=self.TEXT, bg=self.CARD,
                  ).pack(side=tk.LEFT, pady=8)
@@ -510,7 +523,7 @@ class SesliYazi:
         footer.pack(side=tk.BOTTOM, fill=tk.X, pady=(2, 8))
 
         tk.Label(footer,
-                 text="F9 start/stop  •  STOP mid-speech → instant transcribe",
+                 text="F9 start/stop  •  F10 instant transcribe  •  STOP mid-speech",
                  font=("Consolas", 7), fg=self.TEXT_DIM, bg=self.BG,
                  ).pack(side=tk.TOP)
 
@@ -575,9 +588,9 @@ class SesliYazi:
         self.root.geometry(f"+{event.x_root - self._drag_x}+{event.y_root - self._drag_y}")
 
     def _bind_drag_all(self, widget):
-        """Recursively bind drag to every widget except interactive ones."""
+        """Recursively bind drag to every widget except interactive/clickable ones."""
         skip = (ttk.Combobox, tk.Text, tk.Scrollbar)
-        if not isinstance(widget, skip):
+        if not isinstance(widget, skip) and widget is not self.btn_canvas:
             widget.bind("<ButtonPress-1>", self._drag_start, add="+")
             widget.bind("<B1-Motion>",     self._drag_move,  add="+")
         for child in widget.winfo_children():
@@ -708,6 +721,12 @@ class SesliYazi:
         self.txt_box.config(state=tk.NORMAL)
         self.txt_box.delete("1.0", tk.END)
         self.txt_box.config(state=tk.DISABLED)
+
+    def _flush_now(self):
+        """F10: flush current buffer for immediate transcription, keep recording."""
+        if self.tr.is_running:
+            self.tr.flush_now()
+            self._set_status("⚙ Anında çevriliyor…")
 
     def _toggle(self):
         if self.tr.is_running:

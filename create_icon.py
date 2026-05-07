@@ -20,42 +20,25 @@ WHITE   = (226, 232, 240, 255)   # #e2e8f0
 
 
 def draw_icon(size: int) -> Image.Image:
-    """Clean white mic on solid violet — readable at 16x16 and up."""
+    """Violet circle + white ring + white dot — matches app round button style."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d   = ImageDraw.Draw(img)
     cx = cy = size / 2
 
-    # Solid violet circle background
+    # Outer violet filled circle (full icon)
     d.ellipse([0, 0, size - 1, size - 1], fill=(*VIOLET2[:3], 255))
 
-    # Mic capsule — white bold pill
-    mw = size * 0.175
-    mt = size * 0.12
-    mb = size * 0.55
-    d.ellipse([cx - mw, mt, cx + mw, mt + mw * 2],         fill=(255, 255, 255, 255))
-    d.rectangle([cx - mw, mt + mw, cx + mw, mb - mw],      fill=(255, 255, 255, 255))
-    d.ellipse([cx - mw, mb - mw * 2, cx + mw, mb],         fill=(255, 255, 255, 255))
+    # White ring (thick outline circle — the "○" shape)
+    ring_r  = size * 0.36      # ring radius (center of stroke)
+    ring_lw = max(2, int(size * 0.10))
+    r1 = cx - ring_r - ring_lw / 2
+    r2 = cx + ring_r + ring_lw / 2
+    d.ellipse([r1, r1, r2, r2], outline=(255, 255, 255, 255), width=ring_lw)
 
-    # Stand arc — white
-    aw  = size * 0.30
-    at  = size * 0.42
-    ab  = size * 0.66
-    alw = max(2, size // 16)
-    d.arc([cx - aw, at, cx + aw, ab], start=0, end=180,
-          fill=(255, 255, 255, 220), width=alw)
-
-    # Stem
-    stem_top = (at + ab) / 2
-    stem_bot = size * 0.80
-    sw = alw
-    d.rectangle([cx - sw / 2, stem_top, cx + sw / 2, stem_bot],
-                fill=(255, 255, 255, 220))
-
-    # Base
-    bw = size * 0.22
-    bh = max(2, size // 20)
-    d.rectangle([cx - bw, stem_bot, cx + bw, stem_bot + bh],
-                fill=(255, 255, 255, 220))
+    # Small white dot in center
+    dot_r = max(2, int(size * 0.07))
+    d.ellipse([cx - dot_r, cy - dot_r, cx + dot_r, cy + dot_r],
+              fill=(255, 255, 255, 255))
 
     return img
 
